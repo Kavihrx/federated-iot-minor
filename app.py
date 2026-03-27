@@ -16,14 +16,22 @@ client_models = [LogisticRegression() for _ in range(NUM_CLIENTS)]
 
 def generate_dummy_data(is_anomalous=False):
     """Simulate IoT network traffic data (e.g., packet size, inter-arrival time)."""
+    # We must include both classes (0 and 1) so Logistic Regression can fit properly.
     if is_anomalous:
-        # Anomalous data: higher variance, shifted mean
-        X = np.random.randn(50, NUM_FEATURES) * 2 + 1.5
-        y = np.ones(50)
+        # Mostly anomalous data
+        X_normal = np.random.randn(10, NUM_FEATURES)
+        y_normal = np.zeros(10)
+        X_anom = np.random.randn(40, NUM_FEATURES) * 2 + 1.5
+        y_anom = np.ones(40)
     else:
-        # Normal data
-        X = np.random.randn(50, NUM_FEATURES)
-        y = np.zeros(50)
+        # Mostly normal data
+        X_normal = np.random.randn(45, NUM_FEATURES)
+        y_normal = np.zeros(45)
+        X_anom = np.random.randn(5, NUM_FEATURES) * 2 + 1.5
+        y_anom = np.ones(5)
+        
+    X = np.vstack((X_normal, X_anom))
+    y = np.hstack((y_normal, y_anom))
     return X, y
 
 def simulate_llm_classification(anomaly_score):
