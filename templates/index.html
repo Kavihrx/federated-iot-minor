@@ -1,1 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Federated IoT Intrusion Detection</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #0f172a;
+            --panel-bg: rgba(30, 41, 59, 0.6);
+            --border-color: rgba(255, 255, 255, 0.1);
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --accent-blue: #3b82f6;
+            --success-green: #10b981;
+            --warning-yellow: #f59e0b;
+            --danger-red: #ef4444;
+        }
 
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            min-height: 100vh;
+            padding: 2rem;
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(59, 130, 246, 0.15) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(239, 68, 68, 0.1) 0%, transparent 40%);
+            background-attachment: fixed;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 3rem;
+            animation: fadeInDown 0.8s ease-out;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, #60a5fa, #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        header p {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 2rem;
+        }
+
+        @media (max-width: 900px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .glass-panel {
+            background: var(--panel-bg);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 1.5rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+        }
+
+        .panel-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 0.75rem;
+        }
+
+        /* Controls Section */
+        .controls-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .action-btn {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            color: white;
+            border: none;
+            padding: 1rem 1.5rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(59, 130, 246, 0.6);
+        }
+
+        .action-btn:disabled {
+            background: #475569;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .server-status {
+            padding: 1rem;
+            background: rgba(15, 23, 42, 0.5);
+            border-radius: 8px;
+            border-left: 4px solid var(--accent-blue);
+        }
+
+        /* LLM Logs */
+        .llm-terminal {
+            background: #020617;
+            border-radius: 8px;
+            padding: 1rem;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.9rem;
+            height: 250px;
+            overflow-y: auto;
+            color: #a3e635;
+        }
+
+        .log-line {
+            line-height: 1.5;
+            margin-bottom: 0.5rem;
+        }
+        .log-time { color: var(--text-muted); font-size: 0.8rem; }
+        .log-highlight { color: #facc15; }
+
+        /* IoT Network Grid */
+        .iot-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+
+        .iot-card {
+            background: rgba(15, 23, 42, 0.5);
+            border-radius: 12px;
+            padding: 1.25rem;
+            border: 1px solid var(--border-color);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .iot-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 4px;
+            background: var(--text-muted);
+            transition: background 0.3s ease;
+        }
+
+        .iot-card[data-status="normal"]::before { background: var(--success-green); }
+        .iot-card[data-status="recon"]::before { background: var(--warning-yellow); }
+        .iot-card[data-status="ddos"]::before { background: var(--danger-red); }
+
+        .iot-card.pulse[data-status="ddos"] {
+            animation: borderPulse 1.5s infinite;
+        }
+
+        @keyframes borderPulse {
+            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); border-color: rgba(239, 68, 68, 0.8); }
+            70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); border-color: rgba(239, 68, 68, 0.2); }
+            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); border-color: var(--border-color); }
+        }
+
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .client-id { font-weight: 600; font-size: 1.1rem; margin-bottom: 0.5rem; }
+        .client-score { font-size: 0.875rem; color: var(--text-muted); margin-bottom: 0.5rem; }
+        .client-status { font-size: 0.875rem; font-weight: 600; padding: 0.25rem 0.5rem; border-radius: 4px; display: inline-block;}
+        
+        .status-badge-normal { background: rgba(16, 185, 129, 0.2); color: #34d399; }
+        .status-badge-recon { background: rgba(245, 158, 11, 0.2); color: #fbbf24; }
+        .status-badge-ddos { background: rgba(239, 68, 68, 0.2); color: #f87171; }
+
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+            display: none;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1>Federated LLM Intrusion Detection</h1>
+            <p>Live Aggregation Server & Threat Analysis Dashboard</p>
+        </header>
+
+        <div class="dashboard-grid">
+            <!-- Left Column: Controls and Logs -->
+            <div class="glass-panel controls-panel">
+                <div class="panel-title">⚡ Command Center</div>
+                
+                <button id="runEpochBtn" class="action-btn" onclick="runSimulation()">
+                    <span id="btnText">Execute Global Epoch</span>
+                    <span id="btnSpinner" class="spinner"></span>
+                </button>
+
+                <div class="server-status">
+                    <div style="font-size: 0.875rem; color: var(--text-muted);">Federated Server Status</div>
+                    <div id="fedStatusText" style="font-weight: 600; margin-top: 0.25rem;">Awaiting Execution...</div>
+                </div>
+
+                <div class="panel-title" style="margin-top: 1rem; margin-bottom: 0.5rem; border-bottom: none;">🧠 LLM Analysis Logs</div>
+                <div class="llm-terminal" id="terminalLog">
+                    <div class="log-line"><span class="log-time">[SYSTEM]</span> Server Initialized. Awaiting node telemetry.</div>
+                </div>
+            </div>
+
+            <!-- Right Column: IoT Network Space -->
+            <div class="glass-panel">
+                <div class="panel-title">🌐 Simulated IoT Network</div>
+                <div class="iot-grid" id="iotGrid">
+                    <!-- Default State Cards -->
+                    <div class="iot-card"><div class="client-id">IoT Client 1</div><div class="client-status">Awaiting Telemetry</div></div>
+                    <div class="iot-card"><div class="client-id">IoT Client 2</div><div class="client-status">Awaiting Telemetry</div></div>
+                    <div class="iot-card"><div class="client-id">IoT Client 3</div><div class="client-status">Awaiting Telemetry</div></div>
+                    <div class="iot-card"><div class="client-id">IoT Client 4</div><div class="client-status">Awaiting Telemetry</div></div>
+                    <div class="iot-card"><div class="client-id">IoT Client 5</div><div class="client-status">Awaiting Telemetry</div></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function addLog(message, isHighlight=false) {
+            const terminal = document.getElementById('terminalLog');
+            const time = new Date().toLocaleTimeString('en-US', { hour12: false, hour: "numeric", minute: "numeric", second: "numeric" });
+            const line = document.createElement('div');
+            line.className = 'log-line';
+            line.innerHTML = `<span class="log-time">[${time}]</span> <span class="${isHighlight ? 'log-highlight' : ''}">${message}</span>`;
+            terminal.appendChild(line);
+            terminal.scrollTop = terminal.scrollHeight;
+        }
+
+        async function runSimulation() {
+            const btn = document.getElementById('runEpochBtn');
+            const btnText = document.getElementById('btnText');
+            const btnSpinner = document.getElementById('btnSpinner');
+            const fedStatus = document.getElementById('fedStatusText');
+            const iotGrid = document.getElementById('iotGrid');
+
+            // Set Loading UI
+            btn.disabled = true;
+            btnText.innerText = "Simulating & Training...";
+            btnSpinner.style.display = "inline-block";
+            fedStatus.innerText = "Receiving Local Model Updates...";
+            fedStatus.style.color = "var(--warning-yellow)";
+            
+            addLog("Initiating Federated Training Epoch...", true);
+            addLog("Broadcasting request to 5 edge IoT devices...");
+
+            try {
+                // Call our Flask Backend!
+                const response = await fetch('/api/federated_pipeline');
+                const data = await response.json();
+
+                // Process Results
+                fedStatus.innerText = data.federated_server_status;
+                fedStatus.style.color = "var(--success-green)";
+                
+                addLog(`Server aggregated weights (FedAvg) successfully.`);
+                addLog(`Passing raw logs to LLM layer for contextual classification...`, true);
+
+                // Build IoT Grid UI
+                iotGrid.innerHTML = '';
+                
+                // Map of all 5 clients (assuming 1-5) to track those without anomalies
+                let clientAlerts = {};
+                if (data.results && data.results[0] && data.results[0].client_id) {
+                    data.results.forEach(alert => {
+                        clientAlerts[alert.client_id] = alert;
+                    });
+                } else {
+                    addLog("No specific threats detected. System normal.");
+                }
+
+                for(let i=1; i<=5; i++) {
+                    let cId = `IoT_Client_${i}`;
+                    let alert = clientAlerts[cId];
+                    let cardHTML = '';
+                    
+                    if (alert) {
+                        let statusType = "normal";
+                        let badgeClass = "status-badge-normal";
+                        let isPulse = "";
+                        
+                        if(alert.status.includes("Reconnaissance")) {
+                            statusType = "recon"; badgeClass = "status-badge-recon";
+                            addLog(`⚠️ Alert on ${cId}: Anomalous pattern matches Reconnaissance phase.`);
+                        } else if(alert.status.includes("DDoS")) {
+                            statusType = "ddos"; badgeClass = "status-badge-ddos"; isPulse = "pulse";
+                            addLog(`🚨 CRITICAL on ${cId}: Massive traffic spike identified as DDoS attack signature!`);
+                        } else {
+                            addLog(`[${cId}] Traffic classified as regular operation.`);
+                        }
+
+                        cardHTML = `
+                            <div class="iot-card ${isPulse}" data-status="${statusType}">
+                                <div class="client-id">${cId.replace('_',' ')}</div>
+                                <div class="client-score">Threat Score: ${alert.anomaly_score.toFixed(3)}</div>
+                                <div class="client-status ${badgeClass}">${alert.status}</div>
+                            </div>
+                        `;
+                    } else {
+                        cardHTML = `
+                            <div class="iot-card" data-status="normal">
+                                <div class="client-id">IoT Client ${i}</div>
+                                <div class="client-score">Threat Score: < 0.500</div>
+                                <div class="client-status status-badge-normal">Normal Traffic</div>
+                            </div>
+                        `;
+                    }
+                    iotGrid.innerHTML += cardHTML;
+                }
+
+                addLog(`Epoch complete. Standing by for next round.`, true);
+
+            } catch (error) {
+                console.error("Simulation failed:", error);
+                fedStatus.innerText = "Error: Network Endpoint Unreachable";
+                fedStatus.style.color = "var(--danger-red)";
+                addLog("ERROR: Could not complete epoch pipeline.", true);
+            }
+
+            // Reset Loading UI
+            setTimeout(() => {
+                btn.disabled = false;
+                btnText.innerText = "Execute Global Epoch";
+                btnSpinner.style.display = "none";
+            }, 500);
+        }
+    </script>
+</body>
+</html>
