@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, render_template
 import numpy as np
 import random
 from sklearn.linear_model import LogisticRegression
@@ -111,12 +111,8 @@ def run_pipeline():
     return jsonify(response)
 
 @app.route('/', methods=['GET'])
-def health_check():
-    return jsonify({
-        "status": "online", 
-        "service": "Federated LLM-Driven Intrusion Detection Aggregation Server",
-        "usage": "Access /api/federated_pipeline to trigger a simulation round."
-    })
+def dashboard():
+    return render_template('index.html')
 
 if __name__ == '__main__':
     # Bind to 0.0.0.0 to ensure cloud deployment accessibility (Render/Heroku/etc)
