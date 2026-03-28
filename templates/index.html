@@ -3,8 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Federated IoT Intrusion Detection</title>
+    <title>Enterprise Federated Intrusion Detection</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <!-- Inject Chart.js for Live Telemetry Graphing -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
             --bg-dark: #0f172a;
@@ -29,26 +31,26 @@
             background-color: var(--bg-dark);
             color: var(--text-main);
             min-height: 100vh;
-            padding: 2rem;
+            padding: 1.5rem;
             background-image: 
-                radial-gradient(circle at 10% 20%, rgba(59, 130, 246, 0.15) 0%, transparent 40%),
-                radial-gradient(circle at 90% 80%, rgba(239, 68, 68, 0.1) 0%, transparent 40%);
+                radial-gradient(circle at 10% 20%, rgba(59, 130, 246, 0.10) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(239, 68, 68, 0.05) 0%, transparent 40%);
             background-attachment: fixed;
         }
 
         .container {
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
         }
 
         header {
             text-align: center;
-            margin-bottom: 3rem;
+            margin-bottom: 2rem;
             animation: fadeInDown 0.8s ease-out;
         }
 
         h1 {
-            font-size: 2.5rem;
+            font-size: 2.2rem;
             font-weight: 700;
             margin-bottom: 0.5rem;
             background: linear-gradient(135deg, #60a5fa, #a78bfa);
@@ -56,58 +58,49 @@
             -webkit-text-fill-color: transparent;
         }
 
-        header p {
-            color: var(--text-muted);
-            font-size: 1.1rem;
-        }
+        header p { color: var(--text-muted); font-size: 1rem; }
 
         .dashboard-grid {
             display: grid;
-            grid-template-columns: 1fr 2fr;
-            gap: 2rem;
+            grid-template-columns: 1fr 2.5fr;
+            gap: 1.5rem;
         }
 
-        @media (max-width: 900px) {
-            .dashboard-grid {
-                grid-template-columns: 1fr;
-            }
+        @media (max-width: 1000px) {
+            .dashboard-grid { grid-template-columns: 1fr; }
         }
 
         .glass-panel {
             background: var(--panel-bg);
             backdrop-filter: blur(12px);
             border: 1px solid var(--border-color);
-            border-radius: 16px;
-            padding: 1.5rem;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            border-radius: 12px;
+            padding: 1.25rem;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
         }
 
         .panel-title {
-            font-size: 1.25rem;
+            font-size: 1.1rem;
             font-weight: 600;
-            margin-bottom: 1.5rem;
+            margin-bottom: 1rem;
             display: flex;
             align-items: center;
             gap: 0.5rem;
             border-bottom: 1px solid var(--border-color);
-            padding-bottom: 0.75rem;
+            padding-bottom: 0.5rem;
         }
 
         /* Controls Section */
-        .controls-panel {
-            display: flex;
-            flex-direction: column;
-            gap: 1.5rem;
-        }
+        .controls-panel { display: flex; flex-direction: column; gap: 1rem; }
 
         .action-btn {
             background: linear-gradient(135deg, #3b82f6, #2563eb);
             color: white;
             border: none;
-            padding: 1rem 1.5rem;
-            font-size: 1.1rem;
+            padding: 0.8rem 1.2rem;
+            font-size: 1rem;
             font-weight: 600;
-            border-radius: 8px;
+            border-radius: 6px;
             cursor: pointer;
             transition: all 0.3s ease;
             box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
@@ -117,66 +110,72 @@
             gap: 0.5rem;
         }
 
-        .action-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(59, 130, 246, 0.6);
-        }
-
-        .action-btn:disabled {
-            background: #475569;
-            cursor: not-allowed;
-            transform: none;
-            box-shadow: none;
-        }
+        .action-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(59, 130, 246, 0.6); }
+        .action-btn:disabled { background: #475569; cursor: not-allowed; transform: none; box-shadow: none; }
 
         .server-status {
-            padding: 1rem;
+            padding: 0.8rem;
             background: rgba(15, 23, 42, 0.5);
-            border-radius: 8px;
+            border-radius: 6px;
             border-left: 4px solid var(--accent-blue);
         }
 
         /* LLM Logs */
         .llm-terminal {
             background: #020617;
-            border-radius: 8px;
-            padding: 1rem;
+            border-radius: 6px;
+            padding: 0.8rem;
             font-family: 'Courier New', Courier, monospace;
-            font-size: 0.9rem;
-            height: 250px;
+            font-size: 0.85rem;
+            height: 200px;
             overflow-y: auto;
             color: #a3e635;
         }
 
-        .log-line {
-            line-height: 1.5;
-            margin-bottom: 0.5rem;
-        }
-        .log-time { color: var(--text-muted); font-size: 0.8rem; }
+        .log-line { line-height: 1.4; margin-bottom: 0.4rem; }
+        .log-time { color: var(--text-muted); font-size: 0.75rem; }
         .log-highlight { color: #facc15; }
 
-        /* IoT Network Grid */
-        .iot-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            gap: 1rem;
+        /* Chart Section */
+        .chart-container {
+            height: 220px;
+            width: 100%;
+            margin-bottom: 1.5rem;
         }
 
+        /* 50 Node Dense Grid */
+        .iot-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+            gap: 0.75rem;
+            max-height: 480px;
+            overflow-y: auto;
+            padding-right: 0.5rem;
+        }
+
+        /* Webkit Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
         .iot-card {
-            background: rgba(15, 23, 42, 0.5);
-            border-radius: 12px;
-            padding: 1.25rem;
+            background: rgba(15, 23, 42, 0.4);
+            border-radius: 8px;
+            padding: 0.75rem;
             border: 1px solid var(--border-color);
             transition: all 0.3s ease;
             position: relative;
-            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
         }
 
         .iot-card::before {
             content: '';
             position: absolute;
             top: 0; left: 0; right: 0;
-            height: 4px;
+            height: 3px;
             background: var(--text-muted);
             transition: background 0.3s ease;
         }
@@ -185,24 +184,17 @@
         .iot-card[data-status="recon"]::before { background: var(--warning-yellow); }
         .iot-card[data-status="ddos"]::before { background: var(--danger-red); }
 
-        .iot-card.pulse[data-status="ddos"] {
-            animation: borderPulse 1.5s infinite;
-        }
+        .iot-card.pulse[data-status="ddos"] { animation: borderPulse 1.5s infinite; }
 
         @keyframes borderPulse {
             0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); border-color: rgba(239, 68, 68, 0.8); }
-            70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); border-color: rgba(239, 68, 68, 0.2); }
+            70% { box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); border-color: rgba(239, 68, 68, 0.2); }
             100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); border-color: var(--border-color); }
         }
 
-        @keyframes fadeInDown {
-            from { opacity: 0; transform: translateY(-20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .client-id { font-weight: 600; font-size: 1.1rem; margin-bottom: 0.5rem; }
-        .client-score { font-size: 0.875rem; color: var(--text-muted); margin-bottom: 0.5rem; }
-        .client-status { font-size: 0.875rem; font-weight: 600; padding: 0.25rem 0.5rem; border-radius: 4px; display: inline-block;}
+        .client-id { font-weight: 600; font-size: 0.9rem; margin-bottom: 0.25rem; }
+        .client-score { font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.4rem; }
+        .client-status { font-size: 0.7rem; font-weight: 600; padding: 0.2rem 0.4rem; border-radius: 4px; display: inline-block;}
         
         .status-badge-normal { background: rgba(16, 185, 129, 0.2); color: #34d399; }
         .status-badge-recon { background: rgba(245, 158, 11, 0.2); color: #fbbf24; }
@@ -210,9 +202,9 @@
 
         .spinner {
             display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 3px solid rgba(255,255,255,0.3);
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255,255,255,0.3);
             border-radius: 50%;
             border-top-color: #fff;
             animation: spin 1s ease-in-out infinite;
@@ -221,53 +213,118 @@
 
         @keyframes spin { to { transform: rotate(360deg); } }
 
+        /* The dynamic recommendation box for hacked nodes */
+        .recomm-box {
+            display: none; /* hidden by default on tiny cards */
+        }
+        .iot-card[data-status="ddos"] .recomm-box,
+        .iot-card[data-status="recon"] .recomm-box {
+            display: block;
+            margin-top: 8px;
+            font-size: 0.7rem;
+            background: rgba(0,0,0,0.5);
+            padding: 6px;
+            border-radius: 4px;
+            border-left: 2px solid var(--accent-blue);
+            line-height: 1.3;
+        }
+
     </style>
 </head>
 <body>
 
     <div class="container">
         <header>
-            <h1>Federated LLM Intrusion Detection</h1>
-            <p>Live Aggregation Server & Threat Analysis Dashboard</p>
+            <h1>Global IoT Threat Intelligence</h1>
+            <p>Enterprise Scale: 50-Node Live Aggregation Dashboard</p>
         </header>
 
         <div class="dashboard-grid">
-            <!-- Left Column: Controls and Logs -->
+            <!-- Left Column: Controls, Details, Logs -->
             <div class="glass-panel controls-panel">
                 <div class="panel-title">⚡ Command Center</div>
                 
                 <button id="runEpochBtn" class="action-btn" onclick="runSimulation()">
-                    <span id="btnText">Execute Global Epoch</span>
+                    <span id="btnText">Execute Global AI Epoch</span>
                     <span id="btnSpinner" class="spinner"></span>
                 </button>
 
                 <div class="server-status">
-                    <div style="font-size: 0.875rem; color: var(--text-muted);">Federated Server Status</div>
+                    <div style="font-size: 0.875rem; color: var(--text-muted);">Federated Algorithmic Status</div>
                     <div id="fedStatusText" style="font-weight: 600; margin-top: 0.25rem;">Awaiting Execution...</div>
                 </div>
 
-                <div class="panel-title" style="margin-top: 1rem; margin-bottom: 0.5rem; border-bottom: none;">🧠 LLM Analysis Logs</div>
+                <div class="panel-title" style="margin-top: 1rem; margin-bottom: 0.5rem; border-bottom: none;">🧠 LLM Alert Logic</div>
                 <div class="llm-terminal" id="terminalLog">
-                    <div class="log-line"><span class="log-time">[SYSTEM]</span> Server Initialized. Awaiting node telemetry.</div>
+                    <div class="log-line"><span class="log-time">[SYSTEM]</span> Server Initialized. Awaiting global telemetry from 50 edge nodes.</div>
                 </div>
             </div>
 
-            <!-- Right Column: IoT Network Space -->
+            <!-- Right Column: Graph and Mega-Grid -->
             <div class="glass-panel">
-                <div class="panel-title">🌐 Simulated IoT Network</div>
+                <div class="panel-title">📈 Live Network Telemetry (Mathematical Weights)</div>
+                <div class="chart-container">
+                    <canvas id="telemetryChart"></canvas>
+                </div>
+
+                <div class="panel-title">🌐 50-Node Active Device Grid</div>
                 <div class="iot-grid" id="iotGrid">
-                    <!-- Default State Cards -->
-                    <div class="iot-card"><div class="client-id">IoT Client 1</div><div class="client-status">Awaiting Telemetry</div></div>
-                    <div class="iot-card"><div class="client-id">IoT Client 2</div><div class="client-status">Awaiting Telemetry</div></div>
-                    <div class="iot-card"><div class="client-id">IoT Client 3</div><div class="client-status">Awaiting Telemetry</div></div>
-                    <div class="iot-card"><div class="client-id">IoT Client 4</div><div class="client-status">Awaiting Telemetry</div></div>
-                    <div class="iot-card"><div class="client-id">IoT Client 5</div><div class="client-status">Awaiting Telemetry</div></div>
+                    <!-- Default Standby Nodes generated by JS -->
                 </div>
             </div>
         </div>
     </div>
 
     <script>
+        // Pre-fill the 50 cards defensively before clicking button
+        const grid = document.getElementById('iotGrid');
+        for(let i=1; i<=50; i++) {
+            grid.innerHTML += `
+                <div class="iot-card" data-status="normal">
+                    <div class="client-id">Node_${i}</div>
+                    <div class="client-score">Status: Standby</div>
+                    <div class="client-status status-badge-normal">Awaiting Telemetry</div>
+                </div>
+            `;
+        }
+
+        // Initialize Global Chart.js Configuration
+        const ctx = document.getElementById('telemetryChart').getContext('2d');
+        let telemetryChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: Array.from({length: 50}, (_, i) => `Node ${i+1}`),
+                datasets: [{
+                    label: 'Calculated Threat Score',
+                    data: Array(50).fill(0), // start empty
+                    backgroundColor: 'rgba(52, 211, 153, 0.6)',
+                    borderColor: 'rgba(52, 211, 153, 1)',
+                    borderWidth: 1,
+                    borderRadius: 3
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 1.0,
+                        grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                        ticks: { color: '#94a3b8' }
+                    },
+                    x: {
+                        grid: { display: false },
+                        ticks: { display: false } // Hide 50 labels so it looks clean
+                    }
+                },
+                plugins: {
+                    legend: { labels: { color: '#f8fafc' } }
+                }
+            }
+        });
+
+        // Terminal Logging
         function addLog(message, isHighlight=false) {
             const terminal = document.getElementById('terminalLog');
             const time = new Date().toLocaleTimeString('en-US', { hour12: false, hour: "numeric", minute: "numeric", second: "numeric" });
@@ -278,6 +335,7 @@
             terminal.scrollTop = terminal.scrollHeight;
         }
 
+        // Main Simulation Fetch Routine
         async function runSimulation() {
             const btn = document.getElementById('runEpochBtn');
             const btnText = document.getElementById('btnText');
@@ -287,40 +345,55 @@
 
             // Set Loading UI
             btn.disabled = true;
-            btnText.innerText = "Simulating & Training...";
+            btnText.innerText = "Simulating & Aggregating 50 Models...";
             btnSpinner.style.display = "inline-block";
-            fedStatus.innerText = "Receiving Local Model Updates...";
+            fedStatus.innerText = "Listening to 50 Edge Devices...";
             fedStatus.style.color = "var(--warning-yellow)";
             
-            addLog("Initiating Federated Training Epoch...", true);
-            addLog("Broadcasting request to 5 edge IoT devices...");
+            addLog("Initiating Global Training Epoch...", true);
 
             try {
-                // Call our Flask Backend!
+                // Network Call to Python AI!
                 const response = await fetch('/api/federated_pipeline');
                 const data = await response.json();
 
-                // Process Results
+                // 1. Process Status Result
                 fedStatus.innerText = data.federated_server_status;
                 fedStatus.style.color = "var(--success-green)";
-                
-                addLog(`Server aggregated weights (FedAvg) successfully.`);
-                addLog(`Passing raw logs to LLM layer for contextual classification...`, true);
+                addLog(`Server aggregated weights (FedAvg) over 50 nodes successfully.`);
 
-                // Build IoT Grid UI
-                iotGrid.innerHTML = '';
-                
-                // Map of all 5 clients (assuming 1-5) to track those without anomalies
+                // 2. Update the TELEMETRY CHART dynamically
+                if(data.all_scores) {
+                    const threshold = 0.70;
+                    // Color code the graph bars (Red for attack, Green for normal)
+                    const bgColors = data.all_scores.map(score => score > threshold ? 'rgba(239, 68, 68, 0.8)' : 'rgba(52, 211, 153, 0.6)');
+                    const borderColors = data.all_scores.map(score => score > threshold ? 'rgba(239, 68, 68, 1)' : 'rgba(52, 211, 153, 1)');
+                    
+                    telemetryChart.data.datasets[0].data = data.all_scores;
+                    telemetryChart.data.datasets[0].backgroundColor = bgColors;
+                    telemetryChart.data.datasets[0].borderColor = borderColors;
+                    telemetryChart.update();
+                }
+
+                // 3. Map Alerts for Hacked Devices
                 let clientAlerts = {};
                 if (data.results && data.results[0] && data.results[0].client_id) {
                     data.results.forEach(alert => {
                         clientAlerts[alert.client_id] = alert;
                     });
-                } else {
-                    addLog("No specific threats detected. System normal.");
                 }
 
-                for(let i=1; i<=5; i++) {
+                // 4. Repaint the massive 50-Node Grid
+                iotGrid.innerHTML = '';
+                let hackedCount = Object.keys(clientAlerts).length;
+                
+                if (hackedCount > 0) {
+                    addLog(`Massive threat sweep detected ${hackedCount} active network breaches.`, true);
+                } else {
+                    addLog("All 50 nodes report secure telemetry. Subnet clear.");
+                }
+
+                for(let i=1; i<=50; i++) {
                     let cId = `IoT_Client_${i}`;
                     let alert = clientAlerts[cId];
                     let cardHTML = '';
@@ -332,51 +405,49 @@
                         
                         if(alert.status === "Warning") {
                             statusType = "recon"; badgeClass = "status-badge-recon";
-                            addLog(`⚠️ Alert on ${cId}: Anomalous pattern matches Reconnaissance phase.`);
+                            addLog(`⚠️ Node_${i} flagged Reconnaissance scan.`);
                         } else if(alert.status === "CRITICAL") {
                             statusType = "ddos"; badgeClass = "status-badge-ddos"; isPulse = "pulse";
-                            addLog(`🚨 CRITICAL on ${cId}: Massive traffic spike identified as DDoS attack signature!`);
-                        } else {
-                            addLog(`[${cId}] Traffic classified as regular operation.`);
+                            addLog(`🚨 Node_${i} under massive payload flood! Isolating!`);
                         }
 
                         cardHTML = `
                             <div class="iot-card ${isPulse}" data-status="${statusType}">
-                                <div class="client-id">${cId.replace('_',' ')}</div>
-                                <div class="client-score">Threat Score: ${alert.anomaly_score.toFixed(3)}</div>
-                                <div class="client-status ${badgeClass}">Type: ${alert.attack_type}</div>
-                                <div style="margin-top: 10px; font-size: 0.8rem; background: rgba(0,0,0,0.4); padding: 8px; border-radius: 6px; border-left: 3px solid var(--accent-blue); line-height: 1.4;">
-                                    <strong style="color: #60a5fa;">Recommendation:</strong><br/>${alert.recommendation}
+                                <div class="client-id">Node_${i}</div>
+                                <div class="client-score">Score: ${alert.anomaly_score.toFixed(3)}</div>
+                                <div class="client-status ${badgeClass}">${alert.attack_type}</div>
+                                <div class="recomm-box">
+                                    <strong style="color: #60a5fa;">Action Required:</strong><br/>${alert.recommendation}
                                 </div>
                             </div>
                         `;
                     } else {
+                        // Normal, Compressed Cards
+                        let safeScore = (data.all_scores && data.all_scores[i-1]) ? data.all_scores[i-1].toFixed(3) : "< 0.500";
                         cardHTML = `
                             <div class="iot-card" data-status="normal">
-                                <div class="client-id">IoT Client ${i}</div>
-                                <div class="client-score">Threat Score: < 0.500</div>
-                                <div class="client-status status-badge-normal">Normal Traffic</div>
+                                <div class="client-id">Node_${i}</div>
+                                <div class="client-score">Score: ${safeScore}</div>
+                                <div class="client-status status-badge-normal">Secure</div>
                             </div>
                         `;
                     }
                     iotGrid.innerHTML += cardHTML;
                 }
 
-                addLog(`Epoch complete. Standing by for next round.`, true);
-
             } catch (error) {
                 console.error("Simulation failed:", error);
-                fedStatus.innerText = "Error: Network Endpoint Unreachable";
+                fedStatus.innerText = "Error: Backbone Timeout";
                 fedStatus.style.color = "var(--danger-red)";
-                addLog("ERROR: Could not complete epoch pipeline.", true);
+                addLog("ERROR: High latency drop during epoch pipeline.", true);
             }
 
             // Reset Loading UI
             setTimeout(() => {
                 btn.disabled = false;
-                btnText.innerText = "Execute Global Epoch";
+                btnText.innerText = "Execute Global AI Epoch";
                 btnSpinner.style.display = "none";
-            }, 500);
+            }, 600);
         }
     </script>
 </body>
