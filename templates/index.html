@@ -330,10 +330,10 @@
                         let badgeClass = "status-badge-normal";
                         let isPulse = "";
                         
-                        if(alert.status.includes("Reconnaissance")) {
+                        if(alert.status === "Warning") {
                             statusType = "recon"; badgeClass = "status-badge-recon";
                             addLog(`⚠️ Alert on ${cId}: Anomalous pattern matches Reconnaissance phase.`);
-                        } else if(alert.status.includes("DDoS")) {
+                        } else if(alert.status === "CRITICAL") {
                             statusType = "ddos"; badgeClass = "status-badge-ddos"; isPulse = "pulse";
                             addLog(`🚨 CRITICAL on ${cId}: Massive traffic spike identified as DDoS attack signature!`);
                         } else {
@@ -344,7 +344,10 @@
                             <div class="iot-card ${isPulse}" data-status="${statusType}">
                                 <div class="client-id">${cId.replace('_',' ')}</div>
                                 <div class="client-score">Threat Score: ${alert.anomaly_score.toFixed(3)}</div>
-                                <div class="client-status ${badgeClass}">${alert.status}</div>
+                                <div class="client-status ${badgeClass}">Type: ${alert.attack_type}</div>
+                                <div style="margin-top: 10px; font-size: 0.8rem; background: rgba(0,0,0,0.4); padding: 8px; border-radius: 6px; border-left: 3px solid var(--accent-blue); line-height: 1.4;">
+                                    <strong style="color: #60a5fa;">Recommendation:</strong><br/>${alert.recommendation}
+                                </div>
                             </div>
                         `;
                     } else {
