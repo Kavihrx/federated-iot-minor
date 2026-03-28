@@ -38,14 +38,26 @@ def simulate_llm_classification(anomaly_score):
     """
     Simulates a lightweight LLM-inspired classification module.
     In the paper, an LLM would process the textual anomaly logs.
-    Here, we use a simple heuristic based on the anomaly score to classify the attack type.
+    Here, we use a heuristic to classify the attack type and recommend mitigations.
     """
     if anomaly_score < 0.5:
-        return "Normal Traffic"
+        return {
+            "status": "Normal",
+            "attack_type": "None",
+            "recommendation": "Maintain standard logging."
+        }
     elif 0.5 <= anomaly_score < 0.8:
-        return "Possible Reconnaissance Activity"
+        return {
+            "status": "Warning",
+            "attack_type": "Reconnaissance Port Scan",
+            "recommendation": "Block scanner IP. Isolate IoT device on VLAN."
+        }
     else:
-        return "Intrusion Detected: DDoS"
+        return {
+            "status": "CRITICAL",
+            "attack_type": "DDoS Payload Flood",
+            "recommendation": "Null-route source IP. Trigger automated edge-firewall block."
+        }
 
 @app.route('/api/federated_pipeline', methods=['GET', 'POST'])
 def run_pipeline():
@@ -88,8 +100,11 @@ def run_pipeline():
     # Process the aggregated anomaly logs using the simulated LLM logic
     final_alerts = []
     if not client_anomaly_logs:
+        result = simulate_llm_classification(0.1)
         final_alerts.append({
-            "status": simulate_llm_classification(0.1),
+            "status": result["status"],
+            "attack_type": result["attack_type"],
+            "recommendation": result["recommendation"],
             "details": "No anomalies detected across all clients."
         })
     else:
@@ -97,7 +112,9 @@ def run_pipeline():
             classification = simulate_llm_classification(log['anomaly_score'])
             final_alerts.append({
                 "client_id": log['client_id'],
-                "status": classification,
+                "status": classification["status"],
+                "attack_type": classification["attack_type"],
+                "recommendation": classification["recommendation"],
                 "anomaly_score": log['anomaly_score']
             })
             
