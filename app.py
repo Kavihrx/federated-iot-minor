@@ -6,7 +6,7 @@ from sklearn.linear_model import LogisticRegression
 app = Flask(__name__)
 
 # --- Configuration ---
-NUM_CLIENTS = 5
+NUM_CLIENTS = 50
 NUM_FEATURES = 10
 ANOMALY_THRESHOLD = 0.70
 
@@ -66,9 +66,10 @@ def run_pipeline():
     client_anomaly_logs = []
     
     # --- PHASE 1: Client Local Training & Anomaly Detection ---
+    all_scores = []
     for i in range(NUM_CLIENTS):
-        # Randomly decide if this client experiences anomalous traffic
-        experiences_anomaly = random.random() > 0.6 
+        # Randomly decide if this client experiences anomalous traffic (Only ~6% of 50 to maintain realism)
+        experiences_anomaly = random.random() > 0.94 
         X, y = generate_dummy_data(is_anomalous=experiences_anomaly)
         
         # Local Training Simulator
@@ -84,6 +85,9 @@ def run_pipeline():
         # Local Anomaly Detection (Simulated by checking mean prediction probability of class 1)
         preds = model.predict_proba(X)[:, 1]
         mean_anomaly_score = np.mean(preds)
+        
+        
+        all_scores.append(round(float(mean_anomaly_score), 4))
         
         if experiences_anomaly or mean_anomaly_score > ANOMALY_THRESHOLD:
             client_anomaly_logs.append({
@@ -122,7 +126,8 @@ def run_pipeline():
     response = {
         "message": "Federated rounds completed successfully.",
         "federated_server_status": "Weights Aggregated (FedAvg)",
-        "results": final_alerts
+        "results": final_alerts,
+        "all_scores": all_scores
     }
     
     return jsonify(response)
