@@ -6,7 +6,7 @@ from sklearn.linear_model import LogisticRegression
 app = Flask(__name__)
 
 # --- Configuration ---
-NUM_CLIENTS = 50
+NUM_CLIENTS = 5
 NUM_FEATURES = 10
 ANOMALY_THRESHOLD = 0.70
 
@@ -68,8 +68,8 @@ def run_pipeline():
     # --- PHASE 1: Client Local Training & Anomaly Detection ---
     all_scores = []
     for i in range(NUM_CLIENTS):
-        # Randomly decide if this client experiences anomalous traffic (Only ~6% of 50 to maintain realism)
-        experiences_anomaly = random.random() > 0.94 
+        # Randomly decide if this client experiences anomalous traffic (~40% chance for visual demo)
+        experiences_anomaly = random.random() > 0.60
         X, y = generate_dummy_data(is_anomalous=experiences_anomaly)
         
         # Local Training Simulator
